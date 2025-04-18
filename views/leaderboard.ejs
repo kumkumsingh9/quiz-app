@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Leaderboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .header-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            margin: 0;
+        }
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .leaderboard-table th,
+        .leaderboard-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .leaderboard-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .leaderboard-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        .rank {
+            font-weight: bold;
+            color: #3498db;
+        }
+        .score {
+            font-weight: bold;
+            color: #2ecc71;
+        }
+        .date {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        .no-scores {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+        .leaderboard-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .home-button {
+            display: block;
+            width: 100%;
+            max-width: 200px;
+            margin: 30px auto;
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+        }
+        
+        .home-button:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        .header-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 140px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .take-quiz-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .take-quiz-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(76, 175, 80, 0.3);
+            background: linear-gradient(135deg, #45a049, #4CAF50);
+        }
+
+        .home-btn {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+        }
+
+        .home-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(33, 150, 243, 0.3);
+            background: linear-gradient(135deg, #1976D2, #2196F3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Leaderboard</h1>
+            <div class="header-buttons">
+                <a href="/quiz" class="header-btn take-quiz-btn">Take Quiz</a>
+                <a href="/home" class="header-btn home-btn">Back to Home</a>
+            </div>
+        </div>
+        <table class="leaderboard-table">
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Username</th>
+                    <th>Score</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body">
+                <tr>
+                    <td colspan="4" class="loading">Loading scores...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        async function loadLeaderboard() {
+            try {
+                const response = await fetch('/api/scores');
+                const scores = await response.json();
+                
+                const tbody = document.getElementById('leaderboard-body');
+                tbody.innerHTML = '';
+                
+                if (scores.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="no-scores">No scores yet. Be the first to take the quiz!</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                scores.forEach((score, index) => {
+                    const date = new Date(score.date).toLocaleDateString();
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="rank">#${index + 1}</td>
+                        <td>${score.userId.username}</td>
+                        <td class="score">${score.score}</td>
+                        <td class="date">${date}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                document.getElementById('leaderboard-body').innerHTML = `
+                    <tr>
+                        <td colspan="4" class="no-scores">Error loading scores. Please try again later.</td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Load leaderboard when the page loads
+        window.onload = loadLeaderboard;
+    </script>
+</body>
+</html> 
