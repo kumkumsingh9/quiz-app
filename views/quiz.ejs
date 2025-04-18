@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz App - Quiz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 800px;
+            transition: all 0.3s ease;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f2f5;
+        }
+        
+        h1 {
+            color: var(--dark-color);
+            font-weight: 600;
+            font-size: 28px;
+        }
+        
+        .timer {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--dark-color);
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 8px 15px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .timer.warning {
+            animation: pulse 1s infinite;
+            color: #e74c3c;
+            background-color: rgba(231, 76, 60, 0.1);
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .question {
+            font-size: 22px;
+            margin-bottom: 25px;
+            color: var(--dark-color);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+        
+        .options {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .option {
+            padding: 18px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            background-color: white;
+        }
+        
+        .option:hover {
+            background-color: rgba(67, 97, 238, 0.05);
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .option.selected {
+            background-color: rgba(67, 97, 238, 0.1);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .option.correct {
+            background-color: rgba(76, 201, 240, 0.1);
+            color: #2ecc71;
+            border-color: #2ecc71;
+        }
+        
+        .option.incorrect {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+        
+        .progress {
+            margin-top: 25px;
+            text-align: center;
+            font-size: 16px;
+            color: var(--gray-color);
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            border-radius: 5px;
+            transition: width 0.3s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            font-weight: 500;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .feedback.correct {
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            display: block;
+        }
+        
+        .feedback.incorrect {
+            background-color: rgba(231, 76, 60, 0.1);
+            color: #e74c3c;
+            display: block;
+        }
+        
+        .option-stats {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            display: none;
+            border: 1px solid #e9ecef;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 600px;
+            z-index: 10;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 5;
+        }
+        
+        .option-stat {
+            margin-bottom: 10px;
+            position: relative;
+        }
+        
+        .option-stat-bar {
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .option-stat-fill {
+            height: 100%;
+            background-color: #3498db;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        
+        .option-stat-fill.correct {
+            background-color: #2ecc71;
+        }
+        
+        .option-stat-label {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: 500;
+            z-index: 1;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .option-stat-text {
+            font-size: 14px;
+            color: var(--gray-color);
+            margin-bottom: 5px;
+        }
+        
+        .correct-badge {
+            display: inline-block;
+            background-color: #2ecc71;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 6px 12px rgba(156, 39, 176, 0.3);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border: 2px solid transparent;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #673AB7 0%, #5E35B1 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 15px rgba(103, 58, 183, 0.4);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .submit-btn:disabled {
+            background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+            opacity: 0.7;
+            border-color: transparent;
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 6px rgba(52, 152, 219, 0.2);
+        }
+        
+        .question-number {
+            font-size: 14px;
+            color: var(--gray-color);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            padding: 8px 15px;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Quiz Challenge</h1>
+            <div class="timer">Time: 10</div>
+        </div>
+        
+        <div class="progress">
+            <div class="progress-text"></div>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+        
+        <div class="question-container">
+            <div class="question-number"></div>
+            <div class="question"></div>
+            <div class="options"></div>
+            <button class="submit-btn" disabled>Submit Answer</button>
+            <div class="feedback"></div>
+        </div>
+        
+        <div class="score-display">Score: 0</div>
+    </div>
+    
+    <div class="overlay"></div>
+    <div class="option-stats"></div>
+
+    <script>
+        let currentQuestion = 0;
+        let score = 0;
+        let timer;
+        let timeLeft = 10;
+        let questions = [];
+        let selectedAnswer = null;
+        let userSelections = []; // Array to store user's selections
+        let optionStats = {}; // Object to store option selection stats
+
+        async function loadQuestions() {
+            try {
+                const response = await fetch('/api/questions');
+                questions = await response.json();
+                displayQuestion();
+            } catch (error) {
+                console.error('Error loading questions:', error);
+            }
+        }
+
+        function displayQuestion() {
+            if (currentQuestion >= questions.length) {
+                submitQuiz();
+                return;
+            }
+
+            const question = questions[currentQuestion];
+            document.querySelector('.question').textContent = question.question;
+            document.querySelector('.question-number').textContent = `Question ${currentQuestion + 1} of ${questions.length}`;
+            
+            const optionsContainer = document.querySelector('.options');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option';
+                button.textContent = option;
+                button.onclick = () => selectOption(index);
+                optionsContainer.appendChild(button);
+            });
+
+            // Update progress bar
+            const progressPercentage = ((currentQuestion + 1) / questions.length) * 100;
+            document.querySelector('.progress-fill').style.width = `${progressPercentage}%`;
+            document.querySelector('.progress-text').textContent = `Progress: ${currentQuestion + 1}/${questions.length}`;
+            
+            // Reset state for new question
+            selectedAnswer = null;
+            document.querySelector('.submit-btn').disabled = true;
+            document.querySelector('.feedback').style.display = 'none';
+            document.querySelector('.option-stats').style.display = 'none';
+            document.querySelector('.overlay').style.display = 'none';
+            
+            // Update score display
+            document.querySelector('.score-display').textContent = `Score: ${score}`;
+            
+            startTimer();
+        }
+
+        function selectOption(index) {
+            selectedAnswer = index;
+            const options = document.querySelectorAll('.option');
+            options.forEach(option => option.classList.remove('selected'));
+            options[index].classList.add('selected');
+            document.querySelector('.submit-btn').disabled = false;
+        }
+
+        function submitAnswer() {
+            clearInterval(timer);
+            const options = document.querySelectorAll('.option');
+            const correctAnswer = questions[currentQuestion].correctAnswer;
+            
+            // Store the user's selection (or null if no selection was made)
+            userSelections.push({
+                questionIndex: currentQuestion,
+                selectedOption: selectedAnswer
+            });
+            
+            // Disable all options
+            options.forEach(option => option.disabled = true);
+            document.querySelector('.submit-btn').disabled = true;
+
+            // Show correct/incorrect feedback
+            options[correctAnswer].classList.add('correct');
+            
+            if (selectedAnswer === null) {
+                // No answer selected - show feedback
+                document.querySelector('.feedback').textContent = "Time's up! No answer selected.";
+                document.querySelector('.feedback').className = 'feedback incorrect';
+                document.querySelector('.feedback').style.display = 'block';
+            } else if (selectedAnswer !== correctAnswer) {
+                options[selectedAnswer].classList.add('incorrect');
+                document.querySelector('.feedback').textContent = 'Incorrect!';
+                document.querySelector('.feedback').className = 'feedback incorrect';
+            } else {
+                score++;
+                document.querySelector('.feedback').textContent = 'Correct!';
+                document.querySelector('.feedback').className = 'feedback correct';
+                document.querySelector('.score-display').textContent = `Score: ${score}`;
+            }
+            document.querySelector('.feedback').style.display = 'block';
+            
+            // Update option stats
+            updateOptionStats(currentQuestion, selectedAnswer);
+            
+            // Show option stats in overlay
+            displayOptionStats(currentQuestion);
+            document.querySelector('.overlay').style.display = 'block';
+
+            // Move to next question after 1100ms
+            setTimeout(() => {
+                currentQuestion++;
+                displayQuestion();
+                // Hide overlay and stats
+                document.querySelector('.overlay').style.display = 'none';
+                document.querySelector('.option-stats').style.display = 'none';
+            }, 1100);
+        }
+
+        function updateOptionStats(questionIndex, selectedOption) {
+            if (!optionStats[questionIndex]) {
+                optionStats[questionIndex] = [0, 0, 0, 0];
+            }
+            optionStats[questionIndex][selectedOption]++;
+        }
+
+        function displayOptionStats(questionIndex) {
+            const statsContainer = document.querySelector('.option-stats');
+            const question = questions[questionIndex];
+            const stats = optionStats[questionIndex] || [0, 0, 0, 0];
+            const totalSelections = stats.reduce((sum, count) => sum + count, 0);
+            
+            let statsHtml = '<h3 style="margin-bottom: 15px; color: var(--dark-color);">How others answered:</h3>';
+            
+            question.options.forEach((option, index) => {
+                const isCorrect = index === question.correctAnswer;
+                const count = stats[index];
+                const percentage = totalSelections > 0 ? Math.round((count / totalSelections) * 100) : 0;
+                
+                statsHtml += `
+                    <div class="option-stat">
+                        <div class="option-stat-text">
+                            ${String.fromCharCode(65 + index)}: ${option} ${isCorrect ? '<span class="correct-badge">Correct</span>' : ''}
+                        </div>
+                        <div class="option-stat-bar">
+                            <div class="option-stat-fill ${isCorrect ? 'correct' : ''}" style="width: ${percentage}%"></div>
+                            <div class="option-stat-label">${count} (${percentage}%)</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            statsHtml += `<div style="margin-top: 10px; font-size: 14px; color: var(--gray-color);">Total responses: ${totalSelections}</div>`;
+            
+            statsContainer.innerHTML = statsHtml;
+            statsContainer.style.display = 'block';
+        }
+
+        function startTimer() {
+            timeLeft = 10;
+            clearInterval(timer);
+            document.querySelector('.timer').classList.remove('warning');
+            
+            timer = setInterval(() => {
+                timeLeft--;
+                document.querySelector('.timer').textContent = `Time: ${timeLeft}`;
+                
+                // Add warning animation when time is running low
+                if (timeLeft <= 5) {
+                    document.querySelector('.timer').classList.add('warning');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    // If no answer was selected, set selectedAnswer to null
+                    if (selectedAnswer === null) {
+                        // Show "Time's up" message
+                        document.querySelector('.feedback').textContent = "Time's up! No answer selected.";
+                        document.querySelector('.feedback').className = 'feedback incorrect';
+                        document.querySelector('.feedback').style.display = 'block';
+                    }
+                    // Submit the current answer and move to next question
+                    submitAnswer();
+                }
+            }, 1000);
+        }
+
+        async function submitQuiz() {
+            try {
+                // Make sure all selections are properly formatted
+                const formattedSelections = userSelections.map(selection => ({
+                    questionIndex: selection.questionIndex,
+                    selectedOption: selection.selectedOption === null ? -1 : selection.selectedOption
+                }));
+                
+                const response = await fetch('/api/scores', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        score,
+                        selections: formattedSelections
+                    })
+                });
+
+                if (response.ok) {
+                    // Show final score before redirecting
+                    document.querySelector('.container').innerHTML = `
+                        <div style="text-align: center; padding: 40px 0;">
+                            <h1 style="color: var(--primary-color); margin-bottom: 20px;">Quiz Completed!</h1>
+                            <div style="font-size: 24px; margin-bottom: 30px;">Your Score: ${score}/${questions.length}</div>
+                            <p style="margin-bottom: 30px; color: var(--gray-color);">Redirecting to leaderboard...</p>
+                            <div style="width: 100%; height: 10px; background-color: #e9ecef; border-radius: 5px; overflow: hidden;">
+                                <div style="width: 100%; height: 100%; background-color: var(--primary-color); border-radius: 5px;"></div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Redirect to leaderboard after a short delay
+                    setTimeout(() => {
+                        window.location.href = '/leaderboard';
+                    }, 1500);
+                } else {
+                    console.error('Error submitting score');
+                    // Show error message
+                    document.querySelector('.container').innerHTML = `
+                        <div style="text-align: center; padding: 40px 0;">
+                            <h1 style="color: var(--danger-color); margin-bottom: 20px;">Error</h1>
+                            <p style="margin-bottom: 30px; color: var(--gray-color);">There was an error submitting your score. Please try again.</p>
+                            <a href="/quiz" class="btn" style="display: inline-block; margin-top: 20px;">Try Again</a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error submitting score:', error);
+                // Show error message
+                document.querySelector('.container').innerHTML = `
+                    <div style="text-align: center; padding: 40px 0;">
+                        <h1 style="color: var(--danger-color); margin-bottom: 20px;">Error</h1>
+                        <p style="margin-bottom: 30px; color: var(--gray-color);">There was an error submitting your score. Please try again.</p>
+                        <a href="/quiz" class="btn" style="display: inline-block; margin-top: 20px;">Try Again</a>
+                    </div>
+                `;
+            }
+        }
+
+        // Add event listener for submit button
+        document.querySelector('.submit-btn').addEventListener('click', submitAnswer);
+
+        // Load questions when the page loads
+        window.onload = loadQuestions;
+    </script>
+</body>
+</html>
