@@ -184,7 +184,7 @@ app.post('/signup', async (req, res) => {
         res.status(200).json({ 
             success: true, 
             message: 'User created successfully',
-            redirect: '/home'  // Changed from /quiz to /home
+            redirect: '/quiz'  // Changed from /home to /quiz
         });
     } catch (error) {
         console.error('Signup error:', error);
@@ -216,7 +216,7 @@ app.post('/login', async (req, res) => {
         res.status(200).json({ 
             success: true, 
             message: 'Login successful',
-            redirect: '/home'  // Added redirect URL
+            redirect: '/quiz'  // Changed from /home to /quiz
         });
     } catch (error) {
         console.error('Login error:', error);
@@ -254,7 +254,10 @@ app.post('/api/scores', requireAuth, async (req, res) => {
             await OptionSelection.insertMany(optionSelections);
         }
         
-        res.json({ success: true });
+        res.json({ 
+            success: true,
+            redirect: '/leaderboard'  // Added redirect to leaderboard
+        });
     } catch (error) {
         console.error('Error saving score:', error);
         res.status(500).json({ error: 'Error saving score' });
