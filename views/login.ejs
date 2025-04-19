@@ -128,10 +128,10 @@
                 console.log('Login data:', data);
                 
                 if (response.ok) {
-                    console.log('Login successful, redirecting to:', data.redirect || '/quiz');
+                    console.log('Login successful, redirecting to:', data.redirect || '/home');
                     // Add a small delay to ensure the session is set
                     setTimeout(() => {
-                        window.location.href = data.redirect || '/quiz';
+                        window.location.href = data.redirect || '/home';
                     }, 500);
                 } else {
                     console.log('Login failed:', data.error);
