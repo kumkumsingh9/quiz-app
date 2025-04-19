@@ -18,7 +18,10 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: process.env.NODE_ENV === 'production' }
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
 }));
 
 // MongoDB connection
@@ -181,7 +184,7 @@ app.post('/signup', async (req, res) => {
         res.status(200).json({ 
             success: true, 
             message: 'User created successfully',
-            redirect: '/quiz'  // Add redirect URL
+            redirect: '/home'  // Changed from /quiz to /home
         });
     } catch (error) {
         console.error('Signup error:', error);
@@ -210,7 +213,11 @@ app.post('/login', async (req, res) => {
         }
         
         req.session.userId = user._id;
-        res.status(200).json({ success: true, message: 'Login successful' });
+        res.status(200).json({ 
+            success: true, 
+            message: 'Login successful',
+            redirect: '/home'  // Added redirect URL
+        });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Server error during login' });
