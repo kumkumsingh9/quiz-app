@@ -15,14 +15,14 @@ app.set('view engine', 'ejs');
 
 // Session configuration
 app.use(session({
-    secret: 'your-secret-key',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: { secure: process.env.NODE_ENV === 'production' }
 }));
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/quiz-app', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).then(() => {
