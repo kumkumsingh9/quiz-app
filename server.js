@@ -122,9 +122,15 @@ const quizQuestions = [
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
+    console.log('Auth check - Session:', req.session);
+    console.log('Auth check - User ID:', req.session.userId);
+    
     if (!req.session.userId) {
+        console.log('Auth check - No user ID, redirecting to login');
         return res.redirect('/login');
     }
+    
+    console.log('Auth check - User authenticated, proceeding');
     next();
 };
 
@@ -200,38 +206,38 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     try {
-        console.log('Login attempt for username:', req.body.username);
+        console.log('Login attempt - Body:', req.body);
         const { username, password } = req.body;
-        
-        // Validate required fields
+
         if (!username || !password) {
-            console.log('Login failed: Missing username or password');
-            return res.status(400).json({ error: 'Username and password are required' });
+            console.log('Login failed - Missing credentials');
+            return res.status(400).json({ success: false, message: 'Username and password are required' });
         }
 
         const user = await User.findOne({ username });
-        
         if (!user) {
-            console.log('Login failed: User not found -', username);
-            return res.status(400).json({ error: 'User not found' });
+            console.log('Login failed - User not found:', username);
+            return res.status(401).json({ success: false, message: 'Invalid username or password' });
         }
-        
-        const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            console.log('Login failed: Invalid password for user -', username);
-            return res.status(400).json({ error: 'Invalid password' });
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            console.log('Login failed - Invalid password for user:', username);
+            return res.status(401).json({ success: false, message: 'Invalid username or password' });
         }
-        
+
         req.session.userId = user._id;
-        console.log('Login successful for user:', username);
+        console.log('Login successful - Session after login:', req.session);
+        console.log('Login successful - User ID set:', user._id);
+
         res.status(200).json({ 
             success: true, 
             message: 'Login successful',
-            redirect: '/quiz'
+            redirect: '/home'
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ error: 'Server error during login' });
+        res.status(500).json({ success: false, message: 'An error occurred during login' });
     }
 });
 
