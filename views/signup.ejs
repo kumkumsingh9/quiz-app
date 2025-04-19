@@ -111,9 +111,16 @@
         document.getElementById('signup-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const errorMessage = document.getElementById('error-message');
+            const submitButton = e.target.querySelector('button[type="submit"]');
             
             try {
+                // Disable the submit button to prevent double submission
+                submitButton.disabled = true;
+                submitButton.textContent = 'Signing up...';
+                
                 const formData = new FormData(e.target);
+                console.log('Submitting signup form...');
+                
                 const response = await fetch('/signup', {
                     method: 'POST',
                     headers: {
@@ -127,19 +134,31 @@
                     })
                 });
 
+                console.log('Signup response received:', response.status);
                 const data = await response.json();
+                console.log('Signup data:', data);
                 
                 if (response.ok) {
-                    // Redirect to quiz page if signup is successful
-                    window.location.href = data.redirect || '/quiz';
+                    console.log('Signup successful, redirecting to:', data.redirect || '/quiz');
+                    // Add a small delay to ensure the session is set
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/quiz';
+                    }, 500);
                 } else {
+                    console.log('Signup failed:', data.error);
                     errorMessage.textContent = data.error || 'Error during signup';
                     errorMessage.style.display = 'block';
+                    // Re-enable the submit button
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Sign Up';
                 }
             } catch (error) {
                 console.error('Signup error:', error);
                 errorMessage.textContent = 'Error during signup. Please try again.';
                 errorMessage.style.display = 'block';
+                // Re-enable the submit button
+                submitButton.disabled = false;
+                submitButton.textContent = 'Sign Up';
             }
         });
     </script>

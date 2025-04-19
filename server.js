@@ -20,7 +20,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        sameSite: 'lax'
     }
 }));
 
@@ -154,16 +156,19 @@ app.get('/home', requireAuth, (req, res) => {
 // API Routes
 app.post('/signup', async (req, res) => {
     try {
+        console.log('Signup attempt for username:', req.body.username);
         const { username, password, college, phone } = req.body;
         
         // Check if user already exists
         const existingUser = await User.findOne({ username });
         if (existingUser) {
+            console.log('Signup failed: Username already exists -', username);
             return res.status(400).json({ error: 'Username already exists' });
         }
 
         // Validate required fields
         if (!username || !password || !college || !phone) {
+            console.log('Signup failed: Missing required fields');
             return res.status(400).json({ error: 'All fields are required' });
         }
 
@@ -177,6 +182,7 @@ app.post('/signup', async (req, res) => {
         });
         
         await user.save();
+        console.log('User created successfully:', username);
         
         // Set session for the new user
         req.session.userId = user._id;
@@ -184,7 +190,7 @@ app.post('/signup', async (req, res) => {
         res.status(200).json({ 
             success: true, 
             message: 'User created successfully',
-            redirect: '/quiz'  // Changed from /home to /quiz
+            redirect: '/quiz'
         });
     } catch (error) {
         console.error('Signup error:', error);
@@ -194,29 +200,34 @@ app.post('/signup', async (req, res) => {
 
 app.post('/login', async (req, res) => {
     try {
+        console.log('Login attempt for username:', req.body.username);
         const { username, password } = req.body;
         
         // Validate required fields
         if (!username || !password) {
+            console.log('Login failed: Missing username or password');
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
         const user = await User.findOne({ username });
         
         if (!user) {
+            console.log('Login failed: User not found -', username);
             return res.status(400).json({ error: 'User not found' });
         }
         
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
+            console.log('Login failed: Invalid password for user -', username);
             return res.status(400).json({ error: 'Invalid password' });
         }
         
         req.session.userId = user._id;
+        console.log('Login successful for user:', username);
         res.status(200).json({ 
             success: true, 
             message: 'Login successful',
-            redirect: '/quiz'  // Changed from /home to /quiz
+            redirect: '/quiz'
         });
     } catch (error) {
         console.error('Login error:', error);

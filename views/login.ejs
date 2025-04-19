@@ -102,10 +102,16 @@
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const errorMessage = document.getElementById('error-message');
+            const submitButton = e.target.querySelector('button[type="submit"]');
             
             try {
+                // Disable the submit button to prevent double submission
+                submitButton.disabled = true;
+                submitButton.textContent = 'Logging in...';
+                
                 const formData = new FormData(e.target);
                 console.log('Submitting login form...');
+                
                 const response = await fetch('/login', {
                     method: 'POST',
                     headers: {
@@ -123,16 +129,25 @@
                 
                 if (response.ok) {
                     console.log('Login successful, redirecting to:', data.redirect || '/quiz');
-                    window.location.href = data.redirect || '/quiz';
+                    // Add a small delay to ensure the session is set
+                    setTimeout(() => {
+                        window.location.href = data.redirect || '/quiz';
+                    }, 500);
                 } else {
                     console.log('Login failed:', data.error);
                     errorMessage.textContent = data.error || 'Error during login';
                     errorMessage.style.display = 'block';
+                    // Re-enable the submit button
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Login';
                 }
             } catch (error) {
                 console.error('Login error:', error);
                 errorMessage.textContent = 'Error during login. Please try again.';
                 errorMessage.style.display = 'block';
+                // Re-enable the submit button
+                submitButton.disabled = false;
+                submitButton.textContent = 'Login';
             }
         });
     </script>
