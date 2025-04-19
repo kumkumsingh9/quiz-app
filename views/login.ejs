@@ -119,7 +119,7 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    window.location.href = '/quiz';
+                    window.location.href = data.redirect || '/quiz';
                 } else {
                     errorMessage.textContent = data.error || 'Error during login';
                     errorMessage.style.display = 'block';
