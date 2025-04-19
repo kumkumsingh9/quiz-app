@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
-// const MongoStore = require('connect-mongo');
+const MongoStore = require('connect-mongo');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 
@@ -19,10 +19,10 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
-    // store: MongoStore.create({
-    //     mongoUrl: process.env.MONGODB_URI,
-    //     ttl: 24 * 60 * 60 // Session TTL (1 day)
-    // }),
+    store: MongoStore.create({
+        mongoUrl: process.env.MONGODB_URI,
+        ttl: 24 * 60 * 60 // Session TTL (1 day)
+    }),
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -129,6 +129,8 @@ const quizQuestions = [
 const requireAuth = (req, res, next) => {
     console.log('Auth check - Session:', req.session);
     console.log('Auth check - User ID:', req.session.userId);
+    console.log('Auth check - Session ID:', req.session.id);
+    console.log('Auth check - Cookie:', req.session.cookie);
     
     if (!req.session.userId) {
         console.log('Auth check - No user ID, redirecting to login');
@@ -234,6 +236,8 @@ app.post('/login', async (req, res) => {
         req.session.userId = user._id;
         console.log('Login successful - Session after login:', req.session);
         console.log('Login successful - User ID set:', user._id);
+        console.log('Login successful - Session ID:', req.session.id);
+        console.log('Login successful - Cookie:', req.session.cookie);
 
         res.status(200).json({ 
             success: true, 
