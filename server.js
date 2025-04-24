@@ -266,7 +266,7 @@ app.post('/login', async (req, res) => {
         res.status(200).json({ 
             success: true, 
             message: 'Login successful',
-            redirect: '/home'
+            redirect: '/quiz'
         });
     } catch (error) {
         console.error('Login error:', error);

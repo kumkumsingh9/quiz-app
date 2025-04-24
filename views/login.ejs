@@ -126,16 +126,18 @@
                 console.log('Login response received:', response.status);
                 const data = await response.json();
                 console.log('Login data:', data);
+                console.log('Redirect URL:', data.redirect);
                 
                 if (response.ok) {
                     console.log('Login successful, redirecting to:', data.redirect || '/home');
                     // Add a small delay to ensure the session is set
                     setTimeout(() => {
+                        console.log('Executing redirect to:', data.redirect || '/home');
                         window.location.href = data.redirect || '/home';
                     }, 500);
                 } else {
                     console.log('Login failed:', data.error);
-                    errorMessage.textContent = data.error || 'Error during login';
+                    errorMessage.textContent = data.error || data.message || 'Error during login';
                     errorMessage.style.display = 'block';
                     // Re-enable the submit button
                     submitButton.disabled = false;
