@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -7,6 +8,14 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
+
+// Print environment variables for debugging (excluding sensitive data)
+console.log('Environment:', {
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT,
+    MONGODB_URI: process.env.MONGODB_URI ? 'Set' : 'Not set',
+    SESSION_SECRET: process.env.SESSION_SECRET ? 'Set' : 'Not set'
+});
 
 // Middleware
 app.use(express.json());
@@ -21,6 +30,7 @@ app.use(session({
     saveUninitialized: false,
     store: MongoStore.create({
         mongoUrl: process.env.MONGODB_URI,
+        collectionName: 'sessions',
         ttl: 24 * 60 * 60 // Session TTL (1 day)
     }),
     cookie: { 
