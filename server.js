@@ -24,7 +24,7 @@ app.use(session({
         ttl: 24 * 60 * 60 // Session TTL (1 day)
     }),
     cookie: { 
-        secure: process.env.NODE_ENV === 'production',
+        secure: false,
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
         sameSite: 'lax'
@@ -36,9 +36,11 @@ mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 }).then(() => {
-    console.log('Connected to MongoDB');
+    console.log('Connected to MongoDB successfully');
 }).catch(err => {
     console.error('MongoDB connection error:', err);
+    console.error('Connection string:', process.env.MONGODB_URI);
+    process.exit(1); // Exit the process if MongoDB connection fails
 });
 
 // User Schema
@@ -218,19 +220,31 @@ app.post('/login', async (req, res) => {
 
         if (!username || !password) {
             console.log('Login failed - Missing credentials');
-            return res.status(400).json({ success: false, message: 'Username and password are required' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Username and password are required',
+                error: 'Missing credentials'
+            });
         }
 
         const user = await User.findOne({ username });
         if (!user) {
             console.log('Login failed - User not found:', username);
-            return res.status(401).json({ success: false, message: 'Invalid username or password' });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid username or password',
+                error: 'User not found'
+            });
         }
 
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             console.log('Login failed - Invalid password for user:', username);
-            return res.status(401).json({ success: false, message: 'Invalid username or password' });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Invalid username or password',
+                error: 'Invalid password'
+            });
         }
 
         req.session.userId = user._id;
@@ -246,7 +260,11 @@ app.post('/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ success: false, message: 'An error occurred during login' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'An error occurred during login',
+            error: error.message
+        });
     }
 });
 
