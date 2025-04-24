@@ -226,6 +226,7 @@ app.post('/signup', async (req, res) => {
 app.post('/login', async (req, res) => {
     try {
         console.log('Login attempt - Body:', req.body);
+        console.log('Login attempt - Headers:', req.headers);
         const { username, password } = req.body;
 
         if (!username || !password) {
@@ -237,7 +238,10 @@ app.post('/login', async (req, res) => {
             });
         }
 
+        console.log('Searching for user:', username);
         const user = await User.findOne({ username });
+        console.log('User search result:', user ? 'User found' : 'User not found');
+        
         if (!user) {
             console.log('Login failed - User not found:', username);
             return res.status(401).json({ 
