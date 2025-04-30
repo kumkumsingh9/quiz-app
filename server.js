@@ -83,6 +83,22 @@ const optionSelectionSchema = new mongoose.Schema({
 
 const OptionSelection = mongoose.model('OptionSelection', optionSelectionSchema);
 
+// Game Session Schema
+const gameSessionSchema = new mongoose.Schema({
+    sessionId: { type: String, required: true, unique: true },
+    players: [{
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        username: String,
+        score: { type: Number, default: 0 },
+        currentQuestion: { type: Number, default: 0 }
+    }],
+    status: { type: String, enum: ['waiting', 'in-progress', 'completed'], default: 'waiting' },
+    startTime: Date,
+    maxPlayers: { type: Number, default: 20 }
+});
+
+const GameSession = mongoose.model('GameSession', gameSessionSchema);
+
 // Sample quiz questions
 const quizQuestions = [
     {
@@ -291,37 +307,43 @@ app.get('/api/questions', requireAuth, (req, res) => {
     res.json(quizQuestions);
 });
 
+// Add this with your other API routes
 app.post('/api/scores', requireAuth, async (req, res) => {
     try {
-        const { score, selections } = req.body;
-        const newScore = new Score({
+        // Save the score
+        const score = new Score({
             userId: req.session.userId,
-            score
+            score: req.body.score
         });
-        
-        await newScore.save();
-        
-        // Save option selections
-        if (selections && Array.isArray(selections)) {
-            const optionSelections = selections.map(selection => ({
-                questionIndex: selection.questionIndex,
-                selectedOption: selection.selectedOption === null || selection.selectedOption === undefined ? -1 : selection.selectedOption,
-                userId: req.session.userId
-            }));
-            
-            await OptionSelection.insertMany(optionSelections);
-        }
-        
+        await score.save();
+
+        // Get top 5 scores with user information
+        const leaderboard = await Score.find()
+            .populate('userId', 'username')
+            .sort({ score: -1, date: -1 })
+            .limit(5)
+            .lean();
+
+        // Format the leaderboard data
+        const formattedLeaderboard = leaderboard.map(entry => ({
+            name: entry.userId.username,
+            score: entry.score
+        }));
+
         res.json({ 
             success: true,
-            redirect: '/leaderboard'  // Added redirect to leaderboard
+            leaderboard: formattedLeaderboard
         });
     } catch (error) {
         console.error('Error saving score:', error);
-        res.status(500).json({ error: 'Error saving score' });
+        res.status(500).json({ 
+            success: false, 
+            error: 'Error saving score' 
+        });
     }
 });
 
+// Add this for the leaderboard page
 app.get('/api/scores', requireAuth, async (req, res) => {
     try {
         const scores = await Score.find()
@@ -330,6 +352,7 @@ app.get('/api/scores', requireAuth, async (req, res) => {
             .limit(10);
         res.json(scores);
     } catch (error) {
+        console.error('Error fetching scores:', error);
         res.status(500).json({ error: 'Error fetching scores' });
     }
 });
@@ -398,4 +421,54 @@ const server = app.listen(PORT, () => {
     } else {
         console.error('Server error:', err);
     }
-}); 
+});
+
+// Session management routes
+app.post('/api/join-session', requireAuth, async (req, res) => {
+    try {
+        let session = await GameSession.findOne({
+            status: 'waiting',
+            'players.length': { $lt: 20 }
+        });
+
+        if (!session) {
+            session = new GameSession({
+                sessionId: `session_${Date.now()}`,
+                players: []
+            });
+        }
+
+        const userInSession = session.players.some(p => p.userId.toString() === req.session.userId);
+        if (!userInSession) {
+            const user = await User.findById(req.session.userId);
+            session.players.push({
+                userId: user._id,
+                username: user.username,
+                score: 0,
+                currentQuestion: 0
+            });
+        }
+
+        if (session.players.length >= 20) {
+            session.status = 'in-progress';
+            session.startTime = new Date();
+        }
+
+        await session.save();
+        res.json({ sessionId: session.sessionId, playersCount: session.players.length });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/session/:sessionId', requireAuth, async (req, res) => {
+    try {
+        const session = await GameSession.findOne({ sessionId: req.params.sessionId });
+        if (!session) {
+            return res.status(404).json({ error: 'Session not found' });
+        }
+        res.json(session);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
