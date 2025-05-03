@@ -219,7 +219,7 @@
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td class="rank">#${index + 1}</td>
-                        <td>${score.userId.username}</td>
+                        <td>${score.userId && score.userId.username ? score.userId.username : 'Anonymous'}</td>
                         <td class="score">${score.score}</td>
                         <td class="date">${date}</td>
                     `;
@@ -239,4 +239,4 @@
         window.onload = loadLeaderboard;
     </script>
 </body>
-</html> 
+</html>

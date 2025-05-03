@@ -47,10 +47,13 @@ mongoose.connect(process.env.MONGODB_URI, {
     useUnifiedTopology: true
 }).then(() => {
     console.log('Connected to MongoDB successfully');
+    // Add more connection details
+    console.log('Database name:', mongoose.connection.name);
+    console.log('Collections:', mongoose.connection.collections);
 }).catch(err => {
     console.error('MongoDB connection error:', err);
     console.error('Connection string:', process.env.MONGODB_URI);
-    process.exit(1); // Exit the process if MongoDB connection fails
+    process.exit(1);
 });
 
 // User Schema
@@ -306,16 +309,38 @@ app.get('/logout', (req, res) => {
 app.get('/api/questions', requireAuth, (req, res) => {
     res.json(quizQuestions);
 });
-
-// Add this with your other API routes
 app.post('/api/scores', requireAuth, async (req, res) => {
     try {
+        console.log('Score update attempt - Session:', req.session);
+        console.log('Score update - User ID:', req.session.userId);
+        console.log('Score update - Request body:', req.body);
+        console.log('MongoDB connection state:', mongoose.connection.readyState);
+
+        if (!req.session.userId) {
+            console.log('Score update failed - No user ID in session');
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated'
+            });
+        }
+
+        if (!req.body.score && req.body.score !== 0) {
+            console.log('Score update failed - No score provided');
+            return res.status(400).json({
+                success: false,
+                error: 'Score is required'
+            });
+        }
+
         // Save the score
         const score = new Score({
             userId: req.session.userId,
             score: req.body.score
         });
+        
+        console.log('Attempting to save score:', score);
         await score.save();
+        console.log('Score saved successfully:', score);
 
         // Get top 5 scores with user information
         const leaderboard = await Score.find()
@@ -326,7 +351,7 @@ app.post('/api/scores', requireAuth, async (req, res) => {
 
         // Format the leaderboard data
         const formattedLeaderboard = leaderboard.map(entry => ({
-            name: entry.userId.username,
+            name: entry.userId ? entry.userId.username : 'Anonymous',
             score: entry.score
         }));
 
@@ -335,10 +360,12 @@ app.post('/api/scores', requireAuth, async (req, res) => {
             leaderboard: formattedLeaderboard
         });
     } catch (error) {
-        console.error('Error saving score:', error);
+        console.error('Detailed error saving score:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({ 
             success: false, 
-            error: 'Error saving score' 
+            error: 'Error saving score',
+            details: error.message
         });
     }
 });
@@ -354,6 +381,65 @@ app.get('/api/scores', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching scores:', error);
         res.status(500).json({ error: 'Error fetching scores' });
+    }
+});
+
+// Add this new endpoint for live leaderboard updates
+// Update the /api/scores/current endpoint
+app.post('/api/scores/current', requireAuth, async (req, res) => {
+    try {
+        const { currentQuestion, score } = req.body;
+        const user = await User.findById(req.session.userId);
+
+        // Find or create a game session
+        let session = await GameSession.findOne({
+            'players.userId': req.session.userId,
+            status: { $ne: 'completed' }
+        });
+
+        if (!session) {
+            session = new GameSession({
+                sessionId: `session_${Date.now()}`,
+                players: [{
+                    userId: user._id,
+                    username: user.username,
+                    score: 0,
+                    currentQuestion: 0
+                }],
+                status: 'in-progress',
+                startTime: new Date()
+            });
+            await session.save();
+        }
+
+        // Update the user's score
+        await GameSession.updateOne(
+            { 
+                _id: session._id,
+                'players.userId': req.session.userId 
+            },
+            { 
+                $set: {
+                    'players.$.score': score,
+                    'players.$.currentQuestion': currentQuestion
+                }
+            }
+        );
+
+        // Get updated session and return leaderboard
+        const updatedSession = await GameSession.findById(session._id);
+        const leaderboard = updatedSession.players
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 5)
+            .map((player, index) => ({
+                username: player.username,
+                score: player.score
+            }));
+
+        res.json(leaderboard);
+    } catch (error) {
+        console.error('Error updating live leaderboard:', error);
+        res.status(500).json({ error: 'Error updating live leaderboard' });
     }
 });
 
@@ -470,5 +556,13 @@ app.get('/api/session/:sessionId', requireAuth, async (req, res) => {
         res.json(session);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+app.get('/api/current-user', requireAuth, async (req, res) => {
+    try {
+        const user = await User.findById(req.session.userId);
+        res.json({ username: user.username });
+    } catch (error) {
+        res.status(500).json({ error: 'Error getting current user' });
     }
 });
